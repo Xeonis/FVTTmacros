@@ -1,29 +1,32 @@
-//количество ячеек сетки
-let mapSizeL = 5; //ширина
-let mapSizeH = 5; //высота
+ui.notifications.info("Заполнение карты в активной сцене начато. Ожидайте дальнейших уведомлений.");
 
-let mapOffsetL = 10; // смещение сетки ширина в гексах
-let mapOffsetH = 10; // смещение сетки высота в гексах
+//количество ячеек сетки
+let mapSizeL = 40; //ширина
+let mapSizeH = 42; //высота
+
+let mapOffsetL = 18; // смещение сетки ширина в гексах
+let mapOffsetH = 28; // смещение сетки высота в гексах
 let reverse = false
-let debug = true
+let debug = false
 let DiceRoll = "3d6" && false; //если поставить false будет кидать 1д(макс значение) аналог фандри таблицы 
 let gridSizeModifyerL = 0; //px
-let gridSizeModifyerH = 0; //px
+let gridSizeModifyerH = 0.24; //px
 // isTile - если тайл то ставим а не игнорируем
 // defaulTileName - если стандартный нужно заполнить а не пропустить сработает если isTile - true
 let mapTiles = {
-    "empty"             : {min: 0,  max: 37, default:true, isTile: false, defaulTileName: "sommename"},//37% 
-	"island"            : {min: 38,  max: 53,},//15%
-    "rust"              : {min: 54,  max: 58},//5%
-    "riffs"             : {min: 59, max: 64},//5%
-    "otmel"             : {min: 65, max: 70},//5%
-    "gypsy-waters"      : {min: 71, max: 76},//5%
-    "puyushaya-glad"    : {min: 77, max: 81},//5%
-    "zhuteva-pady"      : {min: 82, max: 87},//5%
-    "hill"              : {min: 88, max: 90, maxCount: 1 ,diceAroundHex:"1d6", sateliteHex: "island"},//3%
-    "stodimye"          : {min: 91, max: 94, maxCount: 1 ,diceAroundHex:"1d6", sateliteHex: "island"},//3%
-    "svetoch"           : {min: 95, max: 97, maxCount: 1 ,diceAroundHex:"1d6", sateliteHex: "island"},//3%
-    "bonefish"          : {min: 98, max: 100, maxCount: 1 ,diceAroundHex:"1d6", sateliteHex: "bone-lab"},//3%
+    "empty": { min: 0, max: 65, default: true, isTile: false, defaulTileName: "waves_noauto" },//65% 
+    "isle": { min: 66, max: 69, },//3%
+    "island": { min: 70, max: 71, },//1%
+    "rust": { min: 72, max: 74 },//2%
+    "reefs": { min: 75, max: 77 },//2%
+    "otmel": { min: 78, max: 80 },//2%
+    "spoiled": { min: 81, max: 83 },//2%
+    "zongs": { min: 84, max: 85 },//1%
+    "creeps": { min: 86, max: 87 },//1%
+    "hill": { min: 88, max: 90, maxCount: 1, diceAroundHex: "1d6", sateliteHex: "island" },//3%
+    "stodimye": { min: 91, max: 94, maxCount: 1, diceAroundHex: "1d6", sateliteHex: "island" },//3%
+    "svetoch": { min: 95, max: 97, maxCount: 1, diceAroundHex: "1d6", sateliteHex: "island" },//3%
+    "bonefish": { min: 98, max: 100, maxCount: 1, diceAroundHex: "1d6", sateliteHex: "bone-lab" },//3%
 }
 
 DiceRoll = (DiceRoll)? DiceRoll : `1d${Object.values(mapTiles).sort((a, b) => b.max - a.max)[0].max}`
@@ -168,3 +171,5 @@ mapOffsetPixelsH =  (even_or_odd(posL))? mapOffsetPixelsHEven :  mapOffsetPixels
         
    }
 }
+
+ui.notifications.info("Заполнение карты завершено");
