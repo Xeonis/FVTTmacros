@@ -9,8 +9,10 @@ let debug = true
 let DiceRoll = "3d6" && false; //если поставить false будет кидать 1д(макс значение) аналог фандри таблицы 
 let gridSizeModifyerL = 0; //px
 let gridSizeModifyerH = 0; //px
+// isTile - если тайл то ставим а не игнорируем
+// defaulTileName - если стандартный нужно заполнить а не пропустить сработает если isTile - true
 let mapTiles = {
-    "empty"             : {min: 0,  max: 37, default:true},//37%
+    "empty"             : {min: 0,  max: 37, default:true, isTile: false, defaulTileName: "sommename"},//37% 
 	"island"            : {min: 38,  max: 53,},//15%
     "rust"              : {min: 54,  max: 58},//5%
     "riffs"             : {min: 59, max: 64},//5%
@@ -142,8 +144,15 @@ gridSizeH = gridSize + gridSizeModifyerH
 for (let posL = 0; posL < cells.length; posL++) {
 mapOffsetPixelsH =  (even_or_odd(posL))? mapOffsetPixelsHEven :  mapOffsetPixelsHNon
    for (let posH = 0; posH < cells[posL].length; posH++) {
-        if (cells[posL][posH] == tilesName[defaultIndex]) continue;
-        let originalTile = Tagger.getByTag(cells[posL][posH])[0] 
+        let localTileName = cells[posL][posH]
+        if (localTileName == tilesName[defaultIndex]) {
+            if (mapTiles[tilesName[defaultIndex]]?.isTile != true) {
+                continue;
+            }else{
+                localTileName = mapTiles.defaulTileName
+            }
+        }
+        let originalTile = Tagger.getByTag(localTileName)[0] 
         let newTile = originalTile.clone();
 
        
