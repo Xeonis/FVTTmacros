@@ -1,18 +1,26 @@
 //количество ячеек сетки
-let mapSizeL = 5; //ширина
-let mapSizeH = 5; //высота
+let mapSizeL = 40; //ширина
+let mapSizeH = 42; //высота
 
-let mapOffsetL = 10; // смещение сетки ширина в гексах
-let mapOffsetH = 10; // смещение сетки высота в гексах
-let reverse = false
-let debug = true
-let DiceRoll = "3d6" && false; //если поставить false будет кидать 1д(макс значение) аналог фандри таблицы 
+let mapOffsetL = 23.5; // смещение сетки ширина в гексах
+let mapOffsetH = 19; // смещение сетки высота в гексах
+
 let gridSizeModifyerL = 0; //px
-let gridSizeModifyerH = 0; //px
-// isTile - если тайл то ставим а не игнорируем
-// defaulTileName - если стандартный нужно заполнить а не пропустить сработает если isTile - true
+let gridSizeModifyerH = 0.24; //px
+
+let reverse = true // смена длинны на ширину при установке тайлов
+let firstLine = true;
+
+//особые гексы (можно записать как свойство определенного гекса)
+let borderLimits = 3; //Количество тайлов от границы для спавна мест помеченных как "limited"
+let closerLimits = 4; //Количество тайлов от ближайшего "limited" в радиусе
+
+//заполняет все однотипно чтобы упростить отладку параметров
+const debug = true
+// isTile - пустые места игнорировать или ставить заполнитель
+// defaulTileName - название тайла в таггере для 
 let mapTiles = {
-    "empty"             : {min: 0,  max: 37, default:true, isTile: false, defaulTileName: "sommename"},//37% 
+    "empty"             : {min: 0,  max: 37, default:true, isTile: false, defaulTileName: "waves_noauto"},//37% 
 	"island"            : {min: 38,  max: 53,},//15%
     "rust"              : {min: 54,  max: 58},//5%
     "riffs"             : {min: 59, max: 64},//5%
@@ -20,13 +28,13 @@ let mapTiles = {
     "gypsy-waters"      : {min: 71, max: 76},//5%
     "puyushaya-glad"    : {min: 77, max: 81},//5%
     "zhuteva-pady"      : {min: 82, max: 87},//5%
-    "hill"              : {min: 88, max: 90, maxCount: 1 ,diceAroundHex:"1d6", sateliteHex: "island"},//3%
-    "stodimye"          : {min: 91, max: 94, maxCount: 1 ,diceAroundHex:"1d6", sateliteHex: "island"},//3%
-    "svetoch"           : {min: 95, max: 97, maxCount: 1 ,diceAroundHex:"1d6", sateliteHex: "island"},//3%
-    "bonefish"          : {min: 98, max: 100, maxCount: 1 ,diceAroundHex:"1d6", sateliteHex: "bone-lab"},//3%
+    "hill"              : {min: 88, max: 90, maxCount: 1 ,diceAroundHex:"1d6",limited: true, sateliteHex: "island"},//3%
+    "stodimye"          : {min: 91, max: 94, maxCount: 1 ,diceAroundHex:"1d6",limited: true, sateliteHex: "island"},//3%
+    "svetoch"           : {min: 95, max: 97, maxCount: 1 ,diceAroundHex:"1d6",limited: true, sateliteHex: "island"},//3%
+    "bonefish"          : {min: 98, max: 100, maxCount: 1 ,diceAroundHex:"1d6",limited: true,borderLimit:4,closerLimit : 4, sateliteHex: "bone-lab"},//3%
 }
 
-DiceRoll = (DiceRoll)? DiceRoll : `1d${Object.values(mapTiles).sort((a, b) => b.max - a.max)[0].max}`
+const DiceRoll = `1d${Object.values(mapTiles).sort((a, b) => b.max - a.max)[0].max}`
 const tilesName = Object.keys(mapTiles)
 const tilesObject = Object.values(mapTiles)
 
@@ -66,27 +74,48 @@ let cells = (Array(mapSizeL).fill(Array(mapSizeH).fill(0))).map((arr,PosL) => {
 });
 let heightHashL = [];
 let heightHashH = [];
+
+
+function randIntExcep(exp) {
+    return Math.floor(Math.random() * exp.length);
+}
+
+function onRadius (posl,posh,posHM,posLM,rad) {
+    return (posl - posHM)^2 + (posh - posLM)^2 <= rad^2
+} 
+
 //перебираю гексы и заменяю некоторые на сателиты
-/*
+let HashMainPlacedPosH = fillInnHash(mapSizeH)
+let HashMainPlacedPosL = fillInnHash(mapSizeL)
+
+function fillInnHash(size) {
+   return Array(size).map((e,p)=> p)
+}
+function removeFromHash(hash = [],elem) {
+    hash[elem] = 1;
+    return hash.filter(elem => elem != 1)
+}
+
 hashTableOfmainPlaced.forEach(item => {
-    function randIntExcep(min, max, exp) {
-        var n;
-        let save = 1000;
-        while(true){
-            n = Math.floor(Math.random() * (max - min + 1)) + min
-            if(exp.includes(n))
-            save -=1;
-            if (save < 0) return new Error("Stupido!")
-            return n;
-            
-        }
-    }
-    let PosL = randIntExcep(0,mapSizeL-1,heightHashL)
-    heightHashL.push(PosL)
-    let PosH = randIntExcep(0,mapSizeH-1,heightHashH)
-    heightHashH.push(PosH)
+    const tileId = item.indexTile;
+    const tile = mapTiles[tileId];
+
+    const closerLimit = (tile?.closerLimit)? tile.closerLimit : closerLimits;
+
+    const borderLimit = (tile?.borderLimit)? tile.borderLimit : borderLimits;
+    const borderedStartH = (tile?.limited)? borderLimit : 0;
+    const borderedStartL = (tile?.limited)? borderLimit : 0;
+    const borderedH = (tile?.limited)? mapSizeL-1-borderLimit : mapSizeL;
+    const borderedL = (tile?.limited)? mapSizeL-1-borderLimit : mapSizeL;
+
+    let PosL = randIntExcep(HashMainPlacedPosL)
+    HashMainPlacedPosL = removeFromHash(HashMainPlacedPosL,PosL)
+    let PosH = randIntExcep(HashMainPlacedPosH)
+    HashMainPlacedPosH = removeFromHash(HashMainPlacedPosH,PosH)
     
     cells[PosL][PosH] = item.indexTile
+    HashMainPlacedPosH.push(PosH)
+    HashMainPlacedPosL.push(PosL)
     //проверю ближайшие чтобы не удалить один из "особых тайлов" случайно
     // в тупую не бейте ногами ок?
     let rollAround = item.rollAround
@@ -109,7 +138,8 @@ hashTableOfmainPlaced.forEach(item => {
         }
     }
 })
-*/
+
+
 
 cells = cells.map((arr) =>arr.map((e) => { 
     return (debug)? tilesName[2] : (Number.isInteger(e))? tilesName[e] : e;
@@ -141,30 +171,41 @@ function even_or_odd(number) {
 gridSizeL = gridSize + gridSizeModifyerL
 gridSizeH = gridSize + gridSizeModifyerH
 
-for (let posL = 0; posL < cells.length; posL++) {
-mapOffsetPixelsH =  (even_or_odd(posL))? mapOffsetPixelsHEven :  mapOffsetPixelsHNon
-   for (let posH = 0; posH < cells[posL].length; posH++) {
-        let localTileName = cells[posL][posH]
-        if (localTileName == tilesName[defaultIndex]) {
-            if (mapTiles[tilesName[defaultIndex]]?.isTile != true) {
-                continue;
-            }else{
-                localTileName = mapTiles.defaulTileName
-            }
+
+
+new Promise((resolve, reject) => {
+    for (let posL = 0; posL < cells.length; posL++) {
+        new Promise((resolve, reject) => {
+                mapOffsetPixelsH =  (even_or_odd(posL))? mapOffsetPixelsHEven :  mapOffsetPixelsHNon
+                    for (let posH = 0; posH < cells[posL].length; posH++) {
+                    let localTileName = cells[posL][posH]
+                    if (localTileName == tilesName[defaultIndex]) {
+                        if (mapTiles[tilesName[defaultIndex]]?.isTile != true) {
+                            continue;
+                        }else{
+                            localTileName = mapTiles.defaulTileName
+                        }
+                    }
+                    let originalTile = Tagger.getByTag(localTileName)[0] 
+                    let newTile = originalTile.clone();
+
+                
+
+
+                    let X = (even_or_odd(posH))?    gridSizeL * mapOffsetL + gridSizeL*posL           : gridSizeL * mapOffsetL + gridSizeL*0.5 + gridSizeL*posL;
+                    let Y = (even_or_odd(posH))?    gridSizeH * mapOffsetH*Math.sqrt(3)/2  + gridSizeH*posH*Math.sqrt(3)/2 : gridSizeH * mapOffsetH*Math.sqrt(3)/2 + (gridSizeH*Math.sqrt(3)/2)*posH;
+
+                    currentScene.createEmbeddedDocuments("Tile", [newTile]).then (crtile => {
+                        const createdTile = (crtile)[0];
+                        if (! createdTile) return 
+                        createdTile.update({y: (reverse)? Y : X, x: (reverse)? X : Y})
+                        Tagger.addTags(createdTile ,["mapTile", "canBeDeleted"])
+                        resolve(true)
+                    })
+                }
+            }).then(resolve(true))
         }
-        let originalTile = Tagger.getByTag(localTileName)[0] 
-        let newTile = originalTile.clone();
+}).then(
+    ui.notifications.info("Заполнение карты завершено")
+)
 
-       
-
-
-        let X = (even_or_odd(posH))?    gridSizeL * mapOffsetL + gridSizeL*posL           : gridSizeL * mapOffsetL + gridSizeL*0.5 + gridSizeL*posL;
-        let Y = (even_or_odd(posH))?    gridSizeH * mapOffsetH*Math.sqrt(3)/2  + gridSizeH*posH*Math.sqrt(3)/2 : gridSizeH * mapOffsetH*Math.sqrt(3)/2 + (gridSizeH*Math.sqrt(3)/2)*posH;
-        
-        let createdTile = (await currentScene.createEmbeddedDocuments("Tile", [newTile]))[0];
-        if (! createdTile) return 
-        createdTile.update({y: (reverse)? Y : X, x: (reverse)? X : Y})
-        Tagger.addTags(createdTile ,["mapTile", "canBeDeleted"])
-        
-   }
-}
