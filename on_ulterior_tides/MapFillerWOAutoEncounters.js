@@ -102,16 +102,53 @@ function removeFromHashFlat(hash = [],counter) {
 
 function removeFromHashByRadonFlat (hash,poslM,poshM,rad) {
     let newHash = [...hash]
-
-    for (let posL = 0; posL < hash.length; posL++) {
-        const item = hash[posL];
+    let removeRequire = []
+    for (let posL = 0; posL < newHash.length; posL++) {
+        const item = newHash[posL];
         if (onRadius(item.posL,item.posH,poslM,poshM,rad)) {
-            newHash = removeFromHashFlat(hash,item.counter)
+            removeRequire.push(item.counter)
+            
         }
-        
     }
+    removeRequire.forEach((e)=> {
+        newHash = removeFromHashFlat(newHash,e)
+    })
     return newHash
 }
+
+function getAroundFlat (hash,posl,posh,aroundLevel = []) {
+    let around = [];
+    let matrixOfLevels = []
+    
+    aroundLevel.forEach(level => {
+        let countsLevels = level+1
+        let middleelement = Math.floor(level / countsLevels)
+        for (let l = 0; l < countsLevels; l++) {
+            let posl = middleelement - l
+            let countLayer = (posl == 0)? l + 1 :
+            for (let c = 0; c < countLayer; c++) {
+                const element = array[c];
+                
+            }     
+        }
+        countOnLevel = (0)
+        level
+    })
+    const levelUp = (level) => [
+          [-1,0],[-1,1],
+        [0,-1],[0,0],[0,1],
+          [1,0],[1,1],
+    ]
+    if (PosL+l < 0 || PosH+h < 0 ) continue;
+                if (PosL+l > cells.length-1 || PosH+h > cells.length-1) continue;
+                let index = cells[PosL+l][PosH+h]
+                //сам себя то зачем
+                if (l == 0 && h == 0) continue;
+                //проверяю на "особеность"
+                if (hashTableMainTilesIndexes.includes(index)) continue;
+    return around
+}
+
 
 function removeBorder (hash =[],borderLimit) {
     const borderedStart = borderLimit
@@ -121,24 +158,27 @@ function removeBorder (hash =[],borderLimit) {
     const hashed = hash.map(el => {
        if((borderedH < el.posH) || (el.posH < borderedStart)) {el.val = 1}
        if((borderedL < el.posL) || (el.posH < borderedStart)) {el.val = 1}
+       return el
     })
     return hashed.filter(elem=> elem.val != 1)
 }
 
 
 function removeFromHashByRad (hash,poslM,poshM,rad) {
-    let newHash = [...hash]
-
-    for (let posL = 0; posL < hash.length; posL++) {
-        const line = hash[posL];
+    let newHash = [...hash];
+    let removeRequire = []
+    for (let posL = 0; posL < newHash.length; posL++) {
+        const line = newHash[posL];
         for (let posH = 0; posH < line.length; posH++) {
             if (onRadius(posL,posH,poslM,poshM,rad)) {
-                newHash = removeFromHash(hash,posL,posH)
+                removeRequire.push()
+                newHash = removeFromHash(newHash,posL,posH)
             }
         }
     }
     return newHash
 }
+
 
 function TileIsPlaced (posX,posY,listOftiles,gridSize) {
     for (let tile of listOftiles) {
@@ -202,7 +242,8 @@ void async function main () {
 
     hashTableOfmainPlaced.forEach(item => {
         const tileId = item.indexTile;
-        const tile = mapTiles[tileId];
+        const tileName = tilesName[tileId]
+        const tile = mapTiles[tileName];
         //удаляем из псевдо хэш таблицы все ячейки которые находятся на границе
         const borderLimit = (tile?.borderLimit)? tile.borderLimit : borderLimits;
         const curWorkHash = (tile?.limited)?  removeBorder(HashMainPlace,borderLimit) : HashMainPlace
@@ -214,7 +255,7 @@ void async function main () {
         const PosL = elem.posL
         const PosH = elem.posH
         //удаляем из хэш таблицы значения которые находятся в радиусе запрета
-        HashMainPlace = removeFromHashByRadonFlat(HashMainPlace,elem.PosL,elem.PosH,closerLimit)
+        HashMainPlace = removeFromHashByRadonFlat(HashMainPlace,PosL,PosH,closerLimit)
 
         //добавляем тайл в общую карту
         cells[PosL][PosH] = item.indexTile
@@ -302,7 +343,7 @@ void async function main () {
             newTile.x = (reverse)? X : Y;
             newTile.y = (reverse)? Y : X;
             if (TileIsPlaced(newTile.x,newTile.y,sceneTiles,gridSize)) {
-                resolve(true)
+                continue;
             }else{
                 newTile.flags.tagger.tags.push(...["mapTile", "canBeDeleted"])
                 newTiles.push(newTile)
