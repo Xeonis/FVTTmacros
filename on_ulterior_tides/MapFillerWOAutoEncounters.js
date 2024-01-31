@@ -32,10 +32,10 @@ let mapTiles = {
     "spoiled"           : { min: 81, max: 83 },//2%
     "zongs"             : { min: 84, max: 85 },//1%
     "creeps"            : { min: 86, max: 87 },//1%
-    "hill"              : {min: 88, max: 90, maxCount: 1 ,diceAroundHex:"1d6",limited: true, sateliteHex: "island"},//3%
-    "stodimye"          : {min: 91, max: 94, maxCount: 1 ,diceAroundHex:"1d6",limited: true, sateliteHex: "island"},//3%
-    "svetoch"           : {min: 95, max: 97, maxCount: 1 ,diceAroundHex:"1d6",limited: true, sateliteHex: "island"},//3%
-    "bonefish"          : {min: 98, max: 100, maxCount: 1 ,diceAroundHex:"1d6",limited: true,borderLimit:4,closerLimit : 4, sateliteHex: "bone-lab"},//3%
+    "hill"              : {min: 88, max: 90, maxCount: 1 ,diceAroundHex:"1d4",limited: true, sateliteHex: "island"},//3%
+    "stodimye"          : {min: 91, max: 94, maxCount: 1 ,diceAroundHex:"1d4",limited: true, sateliteHex: "island",anothersatelites:[{dice:"1d2",hex:"reefs"}]},//3%
+    "svetoch"           : {min: 95, max: 97, maxCount: 1 ,diceAroundHex:"1d4",limited: true, sateliteHex: "island"},//3%
+    "bonefish"          : {min: 98, max: 100, maxCount: 1 ,diceAroundHex:"7",limited: true,borderLimit:4,closerLimit : 4, sateliteHex: "bone-lab"},//3%
 }
 
 
