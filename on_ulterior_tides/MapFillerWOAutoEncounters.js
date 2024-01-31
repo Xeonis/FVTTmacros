@@ -1,5 +1,6 @@
 //количество ячеек сетки
 //количество ячеек сетки
+//количество ячеек сетки
 let mapSizeL = 37; //ширина
 let mapSizeH = 47; //высота
 
@@ -36,6 +37,10 @@ let mapTiles = {
     "svetoch"           : {min: 95, max: 97, maxCount: 1 ,diceAroundHex:"1d6",limited: true, sateliteHex: "island"},//3%
     "bonefish"          : {min: 98, max: 100, maxCount: 1 ,diceAroundHex:"1d6",limited: true,borderLimit:4,closerLimit : 4, sateliteHex: "bone-lab"},//3%
 }
+
+
+
+
 
 const DiceRoll = `1d${Object.values(mapTiles).sort((a, b) => b.max - a.max)[0].max}`
 const tilesName = Object.keys(mapTiles)
@@ -308,10 +313,4 @@ void async function main () {
     await currentScene.createEmbeddedDocuments("Tile", newTiles)
 
     ui.notifications.info("Заполнение карты завершено")
-
-
-
-
-
 } ()
-
