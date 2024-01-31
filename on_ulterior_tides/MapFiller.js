@@ -309,9 +309,5 @@ void async function main () {
 
     ui.notifications.info("Заполнение карты завершено")
 
-
-
-
-
 } ()
 
