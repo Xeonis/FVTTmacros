@@ -23,7 +23,7 @@ const debug = false
 // defaulTileName - название тайла в таггере для 
 
 let mapTiles = {
-    "empty"           : {min: 0, max: 67, default:true, isTile: true, defaulTileName: "waves_auto"},//65%
+    "empty"           : {min: 0, max: 67, default:true, isTile: true, defaulTileName: "waves_noauto"},//65%
     "isle"                  : {min: 68, max: 77,},//10%
     "island"                : {min: 78, max: 80,},//3%
     "spoiled"               : {min: 81, max: 90},//10%
