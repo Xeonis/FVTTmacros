@@ -55,10 +55,13 @@ function fillInnHash(sizeL,sizeH) {
     return Array(sizeL).fill(Array(sizeH).fill(0).map((_,p)=> {return p}))
 }
 
-
+function removeha(hash = [],posl,posh) {
+    hash.findIndex(e => e.l == posl && e.h == posh)
+    return hash.filter(elem => elem != 1)
+}
 
 function removeFromHash(hash = [],posl,posh) {
-    hash[posl][posh] = 1;
+    hash[posl][posh].val = 1;
     return hash.map(line=> line.filter(elem => elem != 1))
 }
 
@@ -264,10 +267,10 @@ void async function main () {
                 for (let c = 0; c < el.dice; c++) {
                     let he = randIntExcep(satelitepos)
                     if (he.l == PosL && PosH == he.h) {
-                        satelitepos = removeFromHash(satelitepos,he.l,he.h)
+                        satelitepos = removeha(satelitepos,he.l,he.h)
                         he = randIntExcep(satelitepos)
                     }
-                    satelitepos = removeFromHash(satelitepos,he.l,he.h)
+                    satelitepos = removeha(satelitepos,he.l,he.h)
                     cells[he.l][he.h] = el.hex
                 }
             })
