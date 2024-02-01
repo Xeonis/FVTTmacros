@@ -4,10 +4,10 @@ let mapSizeL = 37; //ширина
 let mapSizeH = 47; //высота
 
 let mapOffsetL = 24; // смещение сетки ширина в гексах
-let mapOffsetH = 20; // смещение сетки высота в гексах
+let mapOffsetH = 20.04; // смещение сетки высота в гексах
 
 let gridSizeModifyerL = 0; ////смещение нулевой линии по ширине, px
-let gridSizeModifyerH = 0.24; //смещение нулевой линии по высоте, px
+let gridSizeModifyerH = 0; //смещение нулевой линии по высоте, px
 
 let reverse = true // смена длинны на ширину при установке тайлов
 let firstLine = true;
@@ -67,9 +67,26 @@ function randIntExcep(exp = []) {
     return exp[Math.floor(Math.random() * exp.length)];
 }
 
-function onRadius (posl,posh,posLM,posHM,rad) {
-    return (posl - posHM)^2 + (posh - posLM)^2 <= rad^2
+function onRadius (targetL,targetH,centerL,centerH,rad) {
+    let distance = Math.max(
+        Math.abs(centerL - targetL),
+        Math.abs(centerH - targetH),
+        Math.abs(centerL + centerH - targetL - targetH)
+      );
+    return distance <= radius;
 } 
+function getHexagonsInRadius(centerX, centerY, radius) {
+    let hexagons = [];
+  
+    for (let x = -radius; x <= radius; x++) {
+      for (let y = -radius; y <= radius; y++) {
+        if (Math.abs(x) + Math.abs(y) <= radius) {
+          hexagons.push({ l: centerX + x, h: centerY + y });
+        }
+      }
+    }
+    return hexagons;
+  }
 
 function mapToLine (hash) {
     let flatmap = []
@@ -91,20 +108,21 @@ function mapToLine (hash) {
 
 function removeFromHashFlat(hash = [],counter) {
     hash[counter].val = 1;
-    return hash.filter(elem=> elem.val != 1)
+    return hash.filter(elem=> elem?.val != 1)
 }
 
 function removeFromHashByRadonFlat (hash,poslM,poshM,rad) {
     let newHash = [...hash]
-
-    for (let posL = 0; posL < hash.length; posL++) {
-        const item = hash[posL];
-        if (onRadius(item.posL,item.posH,poslM,poshM,rad)) {
-            newHash = removeFromHashFlat(hash,item.counter)
-        }
-        
-    }
-    return newHash
+    let hexes = getHexagonsInRadius(poslM,poshM,rad)
+    return newHash.filter(elem=> {
+        let res = true;
+        hexes.forEach((hex,ind)=> {
+            if (hex.l == elem.posL && hex.h == elem.posH) {
+                hexes.splice(ind, 1);
+                res = false
+            }
+        })
+        return res})
 }
 
 function removeBorder (hash =[],borderLimit) {
@@ -116,7 +134,7 @@ function removeBorder (hash =[],borderLimit) {
        if((borderedH < el.posH) || (el.posH < borderedStart)) {el.val = 1}
        if((borderedL < el.posL) || (el.posH < borderedStart)) {el.val = 1}
     })
-    return hashed.filter(elem=> elem.val != 1)
+    return hashed.filter(elem=> elem?.val != 1)
 }
 
 
@@ -208,25 +226,55 @@ void async function main () {
 
             //проверю ближайшие чтобы не удалить один из "особых тайлов" случайно
             // в тупую не бейте ногами ок?
+            let allplacetiles = []
+            if (tile?.anothersatelites) {
+                tile.anothersatelites.forEach(el => {
+                    allplacetiles.push({dice: new Roll(el.dice || "0").evaluate({async: false}).total, hex: el.hex})
+                })
+            }
+
             let rollAround = item.rollAround
             let basicIndex = item.indexTile
             let sateliteHex = tilesObject[basicIndex].sateliteHex;
-            for (let l = -1; l < 1; l++) {
-                for (let h = -1; h < 1; h++) {
-                    //защищаемся от выхода за нижнюю границу
-                    if (PosL+l < 0 || PosH+h < 0 ) continue;
-                    if (PosL+l > cells.length-1 || PosH+h > cells.length-1) continue;
-                    let index = cells[PosL+l][PosH+h]
-                    //сам себя то зачем
-                    if (l == 0 && h == 0) continue;
-                    //проверяю на "особеность"
-                    if (hashTableMainTilesIndexes.includes(index)) continue;
-                    //если не осталось тайлов для размещения
-                    if(rollAround <= 0) break;
-                    cells[PosL-l][PosH-h] = sateliteHex;
-                    rollAround -= 1
-                }
+
+            
+            allplacetiles.push({dice: rollAround, hex: sateliteHex})
+            let counttiles = 0;
+            allplacetiles.forEach(el => counttiles += el.ra)
+            //получим ид ближайших гексов для сателитов
+            let satelitepos = getHexagonsInRadius(PosL,PosH,1)
+            let more = []
+            if (counttiles > 6) {
+                more = getHexagonsInRadius(PosL,PosH,2)
+                more = more.filter(elem=> {
+                    let res = true;
+                    satelitepos.forEach((hex,ind)=> {
+                        if (hex.l == elem.posL && hex.h == elem.posH) {
+                            res = false
+                        }
+                    })
+                })
             }
+            //уберем один тайл для прохода
+            let input = satelitepos[Math.floor(Math.random() * satelitepos.length)]
+            satelitepos[Math.floor(Math.random() * satelitepos.length)].val = 1
+            satelitepos = satelitepos.filter(elem=> elem?.val != 1)
+            satelitepos = satelitepos.concat(more)
+            allplacetiles.forEach((el,pos) => {
+                for (let c = 0; c < el.dice; c++) {
+                    let he = randIntExcep(satelitepos)
+                    if (he.l == PosL && PosH == he.h) {
+                        satelitepos = removeFromHash(satelitepos,he.l,he.h)
+                        he = randIntExcep(satelitepos)
+                    }
+                    satelitepos = removeFromHash(satelitepos,he.l,he.h)
+                    cells[he.l][he.h] = el.hex
+                }
+            })
+            //
+
+
+
         })
 
 
@@ -287,7 +335,7 @@ void async function main () {
                 newTile.x = (reverse)? X : Y;
                 newTile.y = (reverse)? Y : X;
                 if (TileIsPlaced(newTile.x,newTile.y,sceneTiles,gridSize)) {
-                    resolve(true)
+                    continue;
                 }else{
                     newTile.flags.tagger.tags.push(...["mapTile", "canBeDeleted"])
                     newTiles.push(newTile)
