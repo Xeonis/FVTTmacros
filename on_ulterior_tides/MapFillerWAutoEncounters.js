@@ -149,162 +149,164 @@ function TileIsPlaced (posX,posY,listOftiles,gridSize) {
 
 
 void async function main () {
-    ui.notifications.info("Заполнение карты в активной сцене начато. Ожидайте дальнейших уведомлений.");
+    try {
+        ui.notifications.info("Заполнение карты в активной сцене начато. Ожидайте дальнейших уведомлений.");
 
-
-    
-    //заполняем матрицу наших тайлов
-    let hashTableCount = { };
-    let hashTableOfmainPlaced = [];
-    let cells = (Array(mapSizeL).fill(Array(mapSizeH).fill(0))).map((arr,PosL) => {
-        return arr.map((e,PosH) => {
-            let rollValue = new Roll(DiceRoll).evaluate({async: false}).total
-            let indexTile = tilesObject.findIndex((element) => {return (rollValue >= element.min && rollValue <= element.max) || defaultIndex})
-            //игнорирую уже поставленные тайлы которых неможет быть чем заданное количество
-            if (hashTableCount[indexTile]) {
-                if (hashTableCount[indexTile] >= tilesObject[indexTile].maxCount) {
-                    return defaultIndex
-                }
-                hashTableCount[indexTile] += 1 
-            }else{
-                hashTableCount[indexTile] = 1
-            }
-            //если у гекса может быть сателитный гекс
-            if (tilesObject[indexTile]?.sateliteHex) {
-                //сгенерю их позицию позже 
-                //ролим
-                let rollAround = new Roll(tilesObject[indexTile]?.diceAroundHex || "0").evaluate({async: false}).total
-                //сохраняем для дальнейшего измененния карты
-                hashTableOfmainPlaced.push({rollAround,indexTile})
-                indexTile = defaultIndex;
-            }
-            return indexTile
-        })
-    });
-
-
-        
-
-    let heightHashL = [];
-    let heightHashH = [];
-
-
-    //перебираю гексы и заменяю некоторые на сателиты
-    let HashMainPlace = mapToLine(fillInnHash(mapSizeL,mapSizeH))
-    
-
-
-    hashTableOfmainPlaced.forEach(item => {
-        const tileId = item.indexTile;
-        const tile = mapTiles[tileId];
-        //удаляем из псевдо хэш таблицы все ячейки которые находятся на границе
-        const borderLimit = (tile?.borderLimit)? tile.borderLimit : borderLimits;
-        const curWorkHash = (tile?.limited)?  removeBorder(HashMainPlace,borderLimit) : HashMainPlace
-
-        const closerLimit = (tile?.closerLimit)? tile.closerLimit : closerLimits;
-        //получаем случайное положение по хэш таблице
-        const elem = randIntExcep(curWorkHash)
-        if (!elem) return;// больше места не нашлось
-        const PosL = elem.posL
-        const PosH = elem.posH
-        //удаляем из хэш таблицы значения которые находятся в радиусе запрета
-        HashMainPlace = removeFromHashByRadonFlat(HashMainPlace,elem.PosL,elem.PosH,closerLimit)
-
-        //добавляем тайл в общую карту
-        cells[PosL][PosH] = item.indexTile
-
-
-
-        //проверю ближайшие чтобы не удалить один из "особых тайлов" случайно
-        // в тупую не бейте ногами ок?
-        let rollAround = item.rollAround
-        let basicIndex = item.indexTile
-        let sateliteHex = tilesObject[basicIndex].sateliteHex;
-        for (let l = -1; l < 1; l++) {
-            for (let h = -1; h < 1; h++) {
-                //защищаемся от выхода за нижнюю границу
-                if (PosL+l < 0 || PosH+h < 0 ) continue;
-                if (PosL+l > cells.length-1 || PosH+h > cells.length-1) continue;
-                let index = cells[PosL+l][PosH+h]
-                //сам себя то зачем
-                if (l == 0 && h == 0) continue;
-                //проверяю на "особеность"
-                if (hashTableMainTilesIndexes.includes(index)) continue;
-                //если не осталось тайлов для размещения
-                if(rollAround <= 0) break;
-                cells[PosL-l][PosH-h] = sateliteHex;
-                rollAround -= 1
-            }
-        }
-    })
-
-
-
-    cells = cells.map((arr) =>arr.map((e) => { 
-        return (debug)? tilesName[2] : (Number.isInteger(e))? tilesName[e] : e;
-    }))
-
-    console.log(cells);
-    // Получение данных сцены напрямую, без использования .data
-    let currentScene = game.scenes.current;
-    let sceneGrid = currentScene.grid
-    let gridSize = sceneGrid.size;
-    // Размеры сцены
-    let sceneWidth = currentScene.width;
-    let sceneHeight = currentScene.height;
-    // Расчет количества гексов
-
-    let hexesAcross = Math.ceil(sceneWidth / gridSize);
-    let hexesDown = Math.ceil(sceneHeight / (gridSize * 0.75)); // 0.75 - корректировка для вертикального расстояния между гексами
-
-
-    let mapOffsetPixelsL = gridSize * mapOffsetL; // смещение сетки ширина в гексах
-    let mapOffsetPixelsHEven = gridSize*0.5 + mapOffsetH*gridSize; // смещение сетки ширина в гексах
-    let mapOffsetPixelsHNon = mapOffsetH * gridSize; // смещение сетки высота в гексах
-
-
-    function even_or_odd(number) {
-        return number % 2 === 0 ? true : false;
-    }
-
-    gridSizeL = gridSize + gridSizeModifyerL
-    gridSizeH = gridSize + gridSizeModifyerH
-
-
-    let sceneTiles = currentScene.tiles;
-
-    let newTiles = []
-
-    for (let posL = 0; posL < cells.length; posL++) {
-        mapOffsetPixelsH =  (even_or_odd(posL))? mapOffsetPixelsHEven :  mapOffsetPixelsHNon
-        for (let posH = 0; posH < cells[posL].length; posH++) {
-            
-            let localTileName = cells[posL][posH]
-            if (localTileName == tilesName[defaultIndex]) {
-                if (mapTiles[tilesName[defaultIndex]]?.isTile != true) {
-                    continue;
+        //заполняем матрицу наших тайлов
+        let hashTableCount = { };
+        let hashTableOfmainPlaced = [];
+        let cells = (Array(mapSizeL).fill(Array(mapSizeH).fill(0))).map((arr,PosL) => {
+            return arr.map((e,PosH) => {
+                let rollValue = new Roll(DiceRoll).evaluate({async: false}).total
+                let indexTile = tilesObject.findIndex((element) => {return (rollValue >= element.min && rollValue <= element.max) || defaultIndex})
+                //игнорирую уже поставленные тайлы которых неможет быть чем заданное количество
+                if (hashTableCount[indexTile]) {
+                    if (hashTableCount[indexTile] >= tilesObject[indexTile].maxCount) {
+                        return defaultIndex
+                    }
+                    hashTableCount[indexTile] += 1 
                 }else{
-                    localTileName = mapTiles[tilesName[defaultIndex]].defaulTileName
+                    hashTableCount[indexTile] = 1
+                }
+                //если у гекса может быть сателитный гекс
+                if (tilesObject[indexTile]?.sateliteHex) {
+                    //сгенерю их позицию позже 
+                    //ролим
+                    let rollAround = new Roll(tilesObject[indexTile]?.diceAroundHex || "0").evaluate({async: false}).total
+                    //сохраняем для дальнейшего измененния карты
+                    hashTableOfmainPlaced.push({rollAround,indexTile})
+                    indexTile = defaultIndex;
+                }
+                return indexTile
+            })
+        });
+
+
+        //собираю линейный вариант карты в виде хэш таблицы
+        let HashMainPlace = mapToLine(fillInnHash(mapSizeL,mapSizeH))
+        //перебираю гексы и заменяю некоторые на сателиты
+        hashTableOfmainPlaced.forEach(item => {
+            const tileId = item.indexTile;
+            const tile = mapTiles[tileId];
+            //удаляем из псевдо хэш таблицы все ячейки которые находятся на границе
+            const borderLimit = (tile?.borderLimit)? tile.borderLimit : borderLimits;
+            const curWorkHash = (tile?.limited)?  removeBorder(HashMainPlace,borderLimit) : HashMainPlace
+
+            const closerLimit = (tile?.closerLimit)? tile.closerLimit : closerLimits;
+            //получаем случайное положение по хэш таблице
+            const elem = randIntExcep(curWorkHash)
+            if (!elem) return;// больше места не нашлось
+            const PosL = elem.posL
+            const PosH = elem.posH
+            //удаляем из хэш таблицы значения которые находятся в радиусе запрета
+            HashMainPlace = removeFromHashByRadonFlat(HashMainPlace,elem.PosL,elem.PosH,closerLimit)
+
+            //добавляем тайл в общую карту
+            cells[PosL][PosH] = item.indexTile
+
+
+
+            //проверю ближайшие чтобы не удалить один из "особых тайлов" случайно
+            // в тупую не бейте ногами ок?
+            let rollAround = item.rollAround
+            let basicIndex = item.indexTile
+            let sateliteHex = tilesObject[basicIndex].sateliteHex;
+            for (let l = -1; l < 1; l++) {
+                for (let h = -1; h < 1; h++) {
+                    //защищаемся от выхода за нижнюю границу
+                    if (PosL+l < 0 || PosH+h < 0 ) continue;
+                    if (PosL+l > cells.length-1 || PosH+h > cells.length-1) continue;
+                    let index = cells[PosL+l][PosH+h]
+                    //сам себя то зачем
+                    if (l == 0 && h == 0) continue;
+                    //проверяю на "особеность"
+                    if (hashTableMainTilesIndexes.includes(index)) continue;
+                    //если не осталось тайлов для размещения
+                    if(rollAround <= 0) break;
+                    cells[PosL-l][PosH-h] = sateliteHex;
+                    rollAround -= 1
                 }
             }
+        })
 
-            let originalTile = Tagger.getByTag([localTileName,...aditionalTags])[0] 
-            let newTile = originalTile.clone().toJSON();
 
-            let X = (even_or_odd(posH))?    gridSizeL * mapOffsetL + gridSizeL*posL           : gridSizeL * mapOffsetL + gridSizeL*0.5 + gridSizeL*posL;
-            let Y = (even_or_odd(posH))?    gridSizeH * mapOffsetH*Math.sqrt(3)/2  + gridSizeH*posH*Math.sqrt(3)/2 : gridSizeH * mapOffsetH*Math.sqrt(3)/2 + (gridSizeH*Math.sqrt(3)/2)*posH;
-            newTile.x = (reverse)? X : Y;
-            newTile.y = (reverse)? Y : X;
-            if (TileIsPlaced(newTile.x,newTile.y,sceneTiles,gridSize)) {
-                resolve(true)
-            }else{
-                newTile.flags.tagger.tags.push(...["mapTile", "canBeDeleted"])
-                newTiles.push(newTile)
+
+        cells = cells.map((arr) =>arr.map((e) => { 
+            return (debug)? tilesName[2] : (Number.isInteger(e))? tilesName[e] : e;
+        }))
+
+        console.log(cells);
+        // Получение данных сцены напрямую, без использования .data
+        let currentScene = game.scenes.current;
+        let sceneGrid = currentScene.grid
+        let gridSize = sceneGrid.size;
+        // Размеры сцены
+        let sceneWidth = currentScene.width;
+        let sceneHeight = currentScene.height;
+        // Расчет количества гексов
+
+        let hexesAcross = Math.ceil(sceneWidth / gridSize);
+        let hexesDown = Math.ceil(sceneHeight / (gridSize * 0.75)); // 0.75 - корректировка для вертикального расстояния между гексами
+
+
+        let mapOffsetPixelsL = gridSize * mapOffsetL; // смещение сетки ширина в гексах
+        let mapOffsetPixelsHEven = gridSize*0.5 + mapOffsetH*gridSize; // смещение сетки ширина в гексах
+        let mapOffsetPixelsHNon = mapOffsetH * gridSize; // смещение сетки высота в гексах
+
+
+        function even_or_odd(number) {
+            return number % 2 === 0 ? true : false;
+        }
+
+        gridSizeL = gridSize + gridSizeModifyerL
+        gridSizeH = gridSize + gridSizeModifyerH
+
+
+        let sceneTiles = currentScene.tiles;
+
+        let newTiles = []
+
+        for (let posL = 0; posL < cells.length; posL++) {
+            mapOffsetPixelsH =  (even_or_odd(posL))? mapOffsetPixelsHEven :  mapOffsetPixelsHNon
+            for (let posH = 0; posH < cells[posL].length; posH++) {
+                
+                let localTileName = cells[posL][posH]
+                if (localTileName == tilesName[defaultIndex]) {
+                    if (mapTiles[tilesName[defaultIndex]]?.isTile != true) {
+                        continue;
+                    }else{
+                        localTileName = mapTiles[tilesName[defaultIndex]].defaulTileName
+                    }
+                }
+
+                let originalTile = Tagger.getByTag([localTileName,...aditionalTags])[0] 
+                let newTile = originalTile.clone().toJSON();
+
+                let X = (even_or_odd(posH))?    gridSizeL * mapOffsetL + gridSizeL*posL           : gridSizeL * mapOffsetL + gridSizeL*0.5 + gridSizeL*posL;
+                let Y = (even_or_odd(posH))?    gridSizeH * mapOffsetH*Math.sqrt(3)/2  + gridSizeH*posH*Math.sqrt(3)/2 : gridSizeH * mapOffsetH*Math.sqrt(3)/2 + (gridSizeH*Math.sqrt(3)/2)*posH;
+                newTile.x = (reverse)? X : Y;
+                newTile.y = (reverse)? Y : X;
+                if (TileIsPlaced(newTile.x,newTile.y,sceneTiles,gridSize)) {
+                    resolve(true)
+                }else{
+                    newTile.flags.tagger.tags.push(...["mapTile", "canBeDeleted"])
+                    newTiles.push(newTile)
+                }
             }
         }
+        
+        await currentScene.createEmbeddedDocuments("Tile", newTiles)
+
+        ui.notifications.info("Заполнение карты завершено")
+
+
+    } catch (error) {
+        ui.notifications.error("что то пошло не так :(")
+        console.log(error);
+        return 0
     }
     
-    await currentScene.createEmbeddedDocuments("Tile", newTiles)
 
-    ui.notifications.info("Заполнение карты завершено")
+    
+    
 } ()
