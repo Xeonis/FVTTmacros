@@ -28,7 +28,7 @@ let mapTiles = {
     "island"                : {min: 78, max: 80,},//3%
     "spoiled"               : {min: 81, max: 90},//10%
     "reefs"                 : {min: 91, max: 92},//2%
-    "otmel"                 : {min: 93, max: 94},//2%
+    "flats"                 : {min: 93, max: 94},//2%
     "rust"                  : {min: 95, max: 96},//2%
     "zongs"                 : {min: 97, max: 98},//2%
     "creeps"                : {min: 99, max: 100},//2%
