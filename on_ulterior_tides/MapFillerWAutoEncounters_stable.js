@@ -4,7 +4,7 @@ let mapSizeL = 37; //ширина
 let mapSizeH = 47; //высота
 
 let mapOffsetL = 24; // смещение сетки ширина в гексах
-let mapOffsetH = 20.04; // смещение сетки высота в гексах
+let mapOffsetH = 20.05; // смещение сетки высота в гексах
 
 let gridSizeModifyerL = 0; ////смещение нулевой линии по ширине, px
 let gridSizeModifyerH = 0; //смещение нулевой линии по высоте, px
@@ -13,8 +13,8 @@ let reverse = true // смена длинны на ширину при уста�
 let firstLine = true;
 
 //особые гексы (можно записать как свойство определенного гекса)
-let borderLimits = 3; //Количество тайлов от границы для спавна мест помеченных как "limited"
-let closerLimits = 4; //Количество тайлов от ближайшего "limited" в радиусе
+let borderLimits = 12; //Количество тайлов от границы для спавна мест помеченных как "limited"
+let closerLimits = 12; //Количество тайлов от ближайшего "limited" в радиусе
 let aditionalTags = []// Дополнительные теги отбора устанавливаемых тайлов // должны быть присущи всем!
 
 //заполняет все однотипно чтобы упростить отладку параметров
@@ -23,17 +23,20 @@ const debug = false
 // defaulTileName - название тайла в таггере для 
 
 let mapTiles = {
-    "empty"           : {min: 0, max: 67, default:true, isTile: true, defaulTileName: "waves_noauto"},//65%
-    "isle"                  : {min: 68, max: 77,},//10%
-    "island"                : {min: 78, max: 80,},//3%
-    "spoiled"               : {min: 81, max: 90},//10%
-    "reefs"                 : {min: 91, max: 92},//2%
-    "flats"                 : {min: 93, max: 94},//2%
-    "rust"                  : {min: 95, max: 96},//2%
-    "zongs"                 : {min: 97, max: 98},//2%
-    "creeps"                : {min: 99, max: 100},//2%
+    "empty"             : {min: 0,  max: 65, default:true, isTile: true, defaulTileName: "waves_auto"},//65% 
+    "isle"              : { min: 66, max: 69, },//3%
+    "island"            : { min: 70, max: 71, },//1%
+    "rust"              : { min: 72, max: 74 },//2%
+    "reefs"             : { min: 75, max: 77 },//2%
+    "flats"             : { min: 78, max: 80 },//2%
+    "spoiled"           : { min: 81, max: 83 },//2%
+    "zongs"             : { min: 84, max: 85 },//1%
+    "creeps"            : { min: 86, max: 87 },//1%
+    "holm"              : {min: 88, max: 90, maxCount: 1 ,diceAroundHex:"1d4",limited: true, sateliteHex: "island"},//3%
+    "ntepoah"          : {min: 91, max: 94, maxCount: 1 ,diceAroundHex:"1d4",limited: true, sateliteHex: "island",anothersatelites:[{dice:"1d2",hex:"reefs"}]},//3%
+    "salaith"           : {min: 95, max: 97, maxCount: 1 ,diceAroundHex:"1d4",limited: true, sateliteHex: "island"},//3%
+    "gnawer"          : {min: 98, max: 100, maxCount: 1 ,diceAroundHex:"7",limited: true,borderLimit:4,closerLimit : 4, sateliteHex: "maze"},//3%
 }
-
 
 
 const DiceRoll = `1d${Object.values(mapTiles).sort((a, b) => b.max - a.max)[0].max}`
@@ -45,8 +48,6 @@ const hashTableMainTilesIndexes = []; tilesObject.forEach((element,index) => {if
 
 //стандартный тайл на который мы будем менять всех неугодных
 const defaultIndex = tilesObject.findIndex(e => e?.default)
-
-
 
 
 
