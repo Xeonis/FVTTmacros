@@ -1,7 +1,13 @@
 const tagsToDelete = ["mapTile", "canBeDeleted"];
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 void async function main() {
     ui.notifications.info("Очистка текущей карты начата")
+// the timeout for next parts, for keep the messages order
+    await sleep(2000);
     try {
         const currentScene = game.scenes.current;
         const tiles = Tagger.getByTag(tagsToDelete)
@@ -19,3 +25,6 @@ void async function main() {
         return 0
     }
 }()
+
+// the timeout for possible next script in chain executions
+await sleep(10000);
