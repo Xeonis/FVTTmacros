@@ -60,24 +60,13 @@ function removeha(hash = [],posl,posh) {
     return hash.filter(elem => elem != 1)
 }
 
-function removeFromHash(hash = [],posl,posh) {
-    hash[posl][posh].val = 1;
-    return hash.map(line=> line.filter(elem => elem != 1))
-}
 
 function randIntExcep(exp = []) {
     if (!exp.length) return undefined;
     return exp[Math.floor(Math.random() * exp.length)];
 }
 
-function onRadius (targetL,targetH,centerL,centerH,rad) {
-    let distance = Math.max(
-        Math.abs(centerL - targetL),
-        Math.abs(centerH - targetH),
-        Math.abs(centerL + centerH - targetL - targetH)
-      );
-    return distance <= radius;
-} 
+
 function getHexagonsInRadius(centerX, centerY, radius) {
     let hexagons = [];
   
@@ -139,21 +128,6 @@ function removeBorder (hash =[],borderLimit) {
        return el
     })
     return hashed.filter(elem=> elem?.val != 1)
-}
-
-
-function removeFromHashByRad (hash,poslM,poshM,rad) {
-    let newHash = [...hash]
-
-    for (let posL = 0; posL < hash.length; posL++) {
-        const line = hash[posL];
-        for (let posH = 0; posH < line.length; posH++) {
-            if (onRadius(posL,posH,poslM,poshM,rad)) {
-                newHash = removeFromHash(hash,posL,posH)
-            }
-        }
-    }
-    return newHash
 }
 
 function TileIsPlaced (posX,posY,listOftiles,gridSize) {
