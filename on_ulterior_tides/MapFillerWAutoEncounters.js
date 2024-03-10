@@ -10,7 +10,6 @@ let gridSizeModifyerL = 0; ////смещение нулевой линии по �
 let gridSizeModifyerH = 0; //смещение нулевой линии по высоте, px
 
 let reverse = true // смена длинны на ширину при установке тайлов
-let firstLine = true;
 
 //особые гексы (можно записать как свойство определенного гекса)
 let borderLimits = 3; //Количество тайлов от границы для спавна мест помеченных как "limited"
@@ -33,6 +32,7 @@ let mapTiles = {
     "zongs"                 : {min: 97, max: 98},//2%
     "creeps"                : {min: 99, max: 100},//2%
 }
+
 
 
 
@@ -136,6 +136,7 @@ function removeBorder (hash =[],borderLimit) {
     const hashed = hash.map(el => {
        if((borderedH < el.posH) || (el.posH < borderedStart)) {el.val = 1}
        if((borderedL < el.posL) || (el.posH < borderedStart)) {el.val = 1}
+       return el
     })
     return hashed.filter(elem=> elem?.val != 1)
 }
@@ -198,6 +199,9 @@ void async function main () {
                     hashTableOfmainPlaced.push({rollAround,indexTile})
                     indexTile = defaultIndex;
                 }
+                if (debugSpecificTiles) {
+                    indexTile = defaultIndex;
+                }
                 return indexTile
             })
         });
@@ -208,7 +212,7 @@ void async function main () {
         //перебираю гексы и заменяю некоторые на сателиты
         hashTableOfmainPlaced.forEach(item => {
             const tileId = item.indexTile;
-            const tile = mapTiles[tileId];
+            const tile = tilesObject[tileId];
             //удаляем из псевдо хэш таблицы все ячейки которые находятся на границе
             const borderLimit = (tile?.borderLimit)? tile.borderLimit : borderLimits;
             const curWorkHash = (tile?.limited)?  removeBorder(HashMainPlace,borderLimit) : HashMainPlace
@@ -219,9 +223,9 @@ void async function main () {
             if (!elem) return;// больше места не нашлось
             const PosL = elem.posL
             const PosH = elem.posH
-            //удаляем из хэш таблицы значения которые находятся в радиусе запрета
-            HashMainPlace = removeFromHashByRadonFlat(HashMainPlace,elem.PosL,elem.PosH,closerLimit)
 
+            //удаляем из хэш таблицы значения которые находятся в радиусе запрета
+            HashMainPlace = removeFromHashByRadonFlat(HashMainPlace,elem.posL,elem.posH,closerLimit)
             //добавляем тайл в общую карту
             cells[PosL][PosH] = item.indexTile
 
@@ -331,6 +335,16 @@ void async function main () {
                 }
 
                 let originalTile = Tagger.getByTag([localTileName,...aditionalTags])[0] 
+                if (originalTile == undefined) {
+                    ui.notifications.warn("Ненайден тайл с метками: "+ [localTileName,...aditionalTags].join(","))
+                    if (mapTiles[tilesName[defaultIndex]]?.isTile != true) {
+                        continue;
+                    }else{
+                        localTileName = mapTiles[tilesName[defaultIndex]].defaulTileName
+                    }
+                    originalTile = Tagger.getByTag([localTileName,...aditionalTags])[0]
+                    if (originalTile == undefined) throw new Error("Даже основной тайл я не смог найти") 
+                }
                 let newTile = originalTile.clone().toJSON();
 
                 let X = (even_or_odd(posH))?    gridSizeL * mapOffsetL + gridSizeL*posL           : gridSizeL * mapOffsetL + gridSizeL*0.5 + gridSizeL*posL;
