@@ -18,7 +18,7 @@ let aditionalTags = []// Дополнительные теги отбора ус
 
 //заполняет все однотипно чтобы упростить отладку параметров
 const debug = false
-const debugSpecificTiles = true // отключает спавн всех обычных тайлов
+const debugSpecificTiles = false // отключает спавн всех обычных тайлов
 // isTile - пустые места игнорировать или ставить заполнитель
 // defaulTileName - название тайла в таггере для 
 
