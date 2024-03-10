@@ -22,12 +22,12 @@ const debug = false
 // defaulTileName - название тайла в таггере для 
 
 let mapTiles = {
-    "empty"           : {min: 0, max: 67, default:true, isTile: true, defaulTileName: "waves_noauto"},//65%
+    "empty"           : {min: 0, max: 67, default:true, isTile: true, defaulTileName: "waves_auto"},//65%
     "isle"                  : {min: 68, max: 77,},//10%
     "island"                : {min: 78, max: 80,},//3%
     "spoiled"               : {min: 81, max: 90},//10%
     "reefs"                 : {min: 91, max: 92},//2%
-    "otmel"                 : {min: 93, max: 94},//2%
+    "flats"                 : {min: 93, max: 94},//2%
     "rust"                  : {min: 95, max: 96},//2%
     "zongs"                 : {min: 97, max: 98},//2%
     "creeps"                : {min: 99, max: 100},//2%
