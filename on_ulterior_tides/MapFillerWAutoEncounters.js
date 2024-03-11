@@ -16,6 +16,8 @@ let borderLimits = 3; //Количество тайлов от границы д
 let closerLimits = 4; //Количество тайлов от ближайшего "limited" в радиусе
 let aditionalTags = []// Дополнительные теги отбора устанавливаемых тайлов // должны быть присущи всем!
 
+//Оставлет одну ячейку пустой в подходе к особым островам
+let saveTresspass = false
 //заполняет все однотипно чтобы упростить отладку параметров
 const debug = false
 const debugSpecificTiles = false // отключает спавн всех обычных тайлов
@@ -61,8 +63,10 @@ function fillInnHash(sizeL,sizeH) {
 }
 
 function removeha(hash = [],posl,posh) {
-    hash.findIndex(e => e.l == posl && e.h == posh)
-    return hash.filter(elem => elem != 1)
+    let newHash = [...hash]
+    let a = newHash.findIndex(e => e.l == posl && e.h == posh)
+    newHash[a].val = 0
+    return hash.filter(elem => elem?.val != 0)
 }
 
 
@@ -211,14 +215,13 @@ void async function main () {
 
 
             //проверю ближайшие чтобы не удалить один из "особых тайлов" случайно
-            // в тупую не бейте ногами ок?
             let allplacetiles = []
             if (tile?.anothersatelites) {
                 tile.anothersatelites.forEach(el => {
                     allplacetiles.push({dice: new Roll(el.dice || "0").evaluate({async: false}).total, hex: el.hex})
                 })
             }
-
+            // в тупую не бейте ногами ок?
             let rollAround = item.rollAround
             let basicIndex = item.indexTile
             let sateliteHex = tilesObject[basicIndex].sateliteHex;
@@ -226,28 +229,38 @@ void async function main () {
             
             allplacetiles.push({dice: rollAround, hex: sateliteHex})
             let counttiles = 0;
-            allplacetiles.forEach(el => counttiles += el.ra)
+            allplacetiles.forEach(el => counttiles += el.dice)
             //получим ид ближайших гексов для сателитов
             let satelitepos = getHexagonsInRadius(PosL,PosH,1)
-            let more = []
+           
+            if (saveTresspass) {
+                //уберем один тайл для прохода
+                satelitepos[Math.floor(Math.random() * satelitepos.length)].val = 1
+                satelitepos = satelitepos.filter(elem=> elem?.val != 1)
+            }
+            
             if (counttiles > 6) {
+                let more = []
                 more = getHexagonsInRadius(PosL,PosH,2)
-                more = more.filter(elem=> {
+                more = more.map((el))
+                
+                more.filter(elem=> {
                     let res = true;
-                    satelitepos.forEach((hex,ind)=> {
+                    satelitepos.map((hex,ind)=> {
                         if (hex.l == elem.posL && hex.h == elem.posH) {
                             res = false
                         }
                     })
+                    return res
                 })
+
+                satelitepos = satelitepos.concat(more)
             }
-            //уберем один тайл для прохода
-            let input = satelitepos[Math.floor(Math.random() * satelitepos.length)]
-            satelitepos[Math.floor(Math.random() * satelitepos.length)].val = 1
-            satelitepos = satelitepos.filter(elem=> elem?.val != 1)
-            satelitepos = satelitepos.concat(more)
+            
+            
             allplacetiles.forEach((el,pos) => {
                 for (let c = 0; c < el.dice; c++) {
+                    if (satelitepos == 0) return;
                     let he = randIntExcep(satelitepos)
                     if (he.l == PosL && PosH == he.h) {
                         satelitepos = removeha(satelitepos,he.l,he.h)

@@ -12,10 +12,12 @@ let gridSizeModifyerH = 0; //смещение нулевой линии по в�
 let reverse = true // смена длинны на ширину при установке тайлов
 
 //особые гексы (можно записать как свойство определенного гекса)
-let borderLimits = 10; //Количество тайлов от границы для спавна мест помеченных как "limited"
+let borderLimits = 3; //Количество тайлов от границы для спавна мест помеченных как "limited"
 let closerLimits = 4; //Количество тайлов от ближайшего "limited" в радиусе
 let aditionalTags = []// Дополнительные теги отбора устанавливаемых тайлов // должны быть присущи всем!
 
+//Оставлет одну ячейку пустой в подходе к особым островам
+let saveTresspass = false
 //заполняет все однотипно чтобы упростить отладку параметров
 const debug = false
 const debugSpecificTiles = false // отключает спавн всех обычных тайлов
@@ -23,18 +25,23 @@ const debugSpecificTiles = false // отключает спавн всех об�
 // defaulTileName - название тайла в таггере для 
 
 let mapTiles = {
-    "empty"           : {min: 0, max: 67, default:true, isTile: true, defaulTileName: "waves_noauto"},//65%
-    "isle"                  : {min: 68, max: 77,},//10%
-    "island"                : {min: 78, max: 80,},//3%
-    "spoiled"               : {min: 81, max: 90},//10%
-    "reefs"                 : {min: 91, max: 92},//2%
-    "flats"                 : {min: 93, max: 94},//2%
-    "rust"                  : {min: 95, max: 96},//2%
-    "zongs"                 : {min: 97, max: 98},//2%
-    "creeps"                : {min: 99, max: 100},//2%
-}
+    "empty"     : {min: 0, max: 63, default:true, isTile: true, defaulTileName: "wowaves_auto"},//65%
+    "isle"      : { min: 64, max: 67, },//3%
+    "island"    : { min: 68, max: 69, },//1%
+    "spoiled"   : { min: 70, max: 72 },//2%
+    "reefs"     : { min: 73, max: 75 },//2%
+    "flats"     : { min: 76, max: 78 },//2%
+    "rust"      : { min: 79, max: 81 },//2%
+    "zongs"     : { min: 82, max: 83 },//1%
+    "creeps"    : { min: 84, max: 85 },//1%
 
+    "salaith"   : {min: 86, max: 88, maxCount: 1 ,diceAroundHex:"1d4",limited: true,borderLimit:4,closerLimit : 4, sateliteHex: "island"},//3%
+    "holm"      : {min: 89, max: 91, maxCount: 1 ,diceAroundHex:"1d4",limited: true, sateliteHex: "island"},//3%
+    "ntepoah"   : {min: 92, max: 94, maxCount: 1 ,diceAroundHex:"1d4",limited: true, sateliteHex: "island",anothersatelites:[{dice:"1d2",hex:"reefs"}]},//3%
+    "gnawer"    : {min: 95, max: 97, maxCount: 1 ,diceAroundHex:"7",limited: true, sateliteHex: "maze"},//3%
+    "surgat"    : {min: 98, max: 100, maxCount: 1 ,diceAroundHex:"0",limited: true, sateliteHex: "island"},//3%
 
+}        
 
 const DiceRoll = `1d${Object.values(mapTiles).sort((a, b) => b.max - a.max)[0].max}`
 const tilesName = Object.keys(mapTiles)
@@ -56,8 +63,10 @@ function fillInnHash(sizeL,sizeH) {
 }
 
 function removeha(hash = [],posl,posh) {
-    hash.findIndex(e => e.l == posl && e.h == posh)
-    return hash.filter(elem => elem != 1)
+    let newHash = [...hash]
+    let a = newHash.findIndex(e => e.l == posl && e.h == posh)
+    newHash[a].val = 0
+    return hash.filter(elem => elem?.val != 0)
 }
 
 
@@ -206,14 +215,13 @@ void async function main () {
 
 
             //проверю ближайшие чтобы не удалить один из "особых тайлов" случайно
-            // в тупую не бейте ногами ок?
             let allplacetiles = []
             if (tile?.anothersatelites) {
                 tile.anothersatelites.forEach(el => {
                     allplacetiles.push({dice: new Roll(el.dice || "0").evaluate({async: false}).total, hex: el.hex})
                 })
             }
-
+            // в тупую не бейте ногами ок?
             let rollAround = item.rollAround
             let basicIndex = item.indexTile
             let sateliteHex = tilesObject[basicIndex].sateliteHex;
@@ -221,28 +229,38 @@ void async function main () {
             
             allplacetiles.push({dice: rollAround, hex: sateliteHex})
             let counttiles = 0;
-            allplacetiles.forEach(el => counttiles += el.ra)
+            allplacetiles.forEach(el => counttiles += el.dice)
             //получим ид ближайших гексов для сателитов
             let satelitepos = getHexagonsInRadius(PosL,PosH,1)
-            let more = []
+           
+            if (saveTresspass) {
+                //уберем один тайл для прохода
+                satelitepos[Math.floor(Math.random() * satelitepos.length)].val = 1
+                satelitepos = satelitepos.filter(elem=> elem?.val != 1)
+            }
+            
             if (counttiles > 6) {
+                let more = []
                 more = getHexagonsInRadius(PosL,PosH,2)
-                more = more.filter(elem=> {
+                more = more.map((el))
+                
+                more.filter(elem=> {
                     let res = true;
-                    satelitepos.forEach((hex,ind)=> {
+                    satelitepos.map((hex,ind)=> {
                         if (hex.l == elem.posL && hex.h == elem.posH) {
                             res = false
                         }
                     })
+                    return res
                 })
+
+                satelitepos = satelitepos.concat(more)
             }
-            //уберем один тайл для прохода
-            let input = satelitepos[Math.floor(Math.random() * satelitepos.length)]
-            satelitepos[Math.floor(Math.random() * satelitepos.length)].val = 1
-            satelitepos = satelitepos.filter(elem=> elem?.val != 1)
-            satelitepos = satelitepos.concat(more)
+            
+            
             allplacetiles.forEach((el,pos) => {
                 for (let c = 0; c < el.dice; c++) {
+                    if (satelitepos == 0) return;
                     let he = randIntExcep(satelitepos)
                     if (he.l == PosL && PosH == he.h) {
                         satelitepos = removeha(satelitepos,he.l,he.h)
@@ -349,5 +367,3 @@ void async function main () {
     
     
 } ()
-
-
