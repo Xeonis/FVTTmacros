@@ -23,19 +23,23 @@ const debugSpecificTiles = false // отключает спавн всех об�
 // defaulTileName - название тайла в таггере для 
 
 let mapTiles = {
-    "empty"           : {min: 0, max: 67, default:true, isTile: true, defaulTileName: "waves_auto"},//65%
-    "isle"                  : {min: 68, max: 77,},//10%
-    "island"                : {min: 78, max: 80,},//3%
-    "spoiled"               : {min: 81, max: 90},//10%
-    "reefs"                 : {min: 91, max: 92},//2%
-    "flats"                 : {min: 93, max: 94},//2%
-    "rust"                  : {min: 95, max: 96},//2%
-    "zongs"                 : {min: 97, max: 98},//2%
-    "creeps"                : {min: 99, max: 100},//2%
-}
+    "empty"     : {min: 0, max: 67, default:true, isTile: true, defaulTileName: "waves_auto"},//65%
+    "isle"      : { min: 66, max: 69, },//3%
+    "island"    : { min: 70, max: 71, },//1%
+    "spoiled"   : { min: 72, max: 74 },//2%
+    "reefs"     : { min: 75, max: 77 },//2%
+    "flats"     : { min: 78, max: 80 },//2%
+    "rust"      : { min: 81, max: 83 },//2%
+    "zongs"     : { min: 84, max: 85 },//1%
+    "creeps"    : { min: 86, max: 87 },//1%
 
+    "salaith"   : {min: 98, max: 100, maxCount: 1 ,diceAroundHex:"1d4",limited: true,borderLimit:4,closerLimit : 4, sateliteHex: "island"},//3%
+    "holm"      : {min: 88, max: 90, maxCount: 1 ,diceAroundHex:"1d4",limited: true, sateliteHex: "island"},//3%
+    "ntepoah"   : {min: 95, max: 97, maxCount: 1 ,diceAroundHex:"1d4",limited: true, sateliteHex: "island",anothersatelites:[{dice:"1d2",hex:"reefs"}]},//3%
+    "gnawer"    : {min: 91, max: 94, maxCount: 1 ,diceAroundHex:"7",limited: true, sateliteHex: "maze"},//3%
+    "surgat"    : {min: 88, max: 90, maxCount: 1 ,diceAroundHex:"0",limited: true, sateliteHex: "island"},//3%
 
-
+}        
 
 const DiceRoll = `1d${Object.values(mapTiles).sort((a, b) => b.max - a.max)[0].max}`
 const tilesName = Object.keys(mapTiles)
