@@ -12,10 +12,14 @@ let gridSizeModifyerH = 0; //смещение нулевой линии по в�
 let reverse = true // смена длинны на ширину при установке тайлов
 
 //особые гексы (можно записать как свойство определенного гекса)
-let borderLimits = 3; //Количество тайлов от границы для спавна мест помеченных как "limited"
-let closerLimits = 4; //Количество тайлов от ближайшего "limited" в радиусе
+let borderLimits = 8; //Количество тайлов от границы для спавна мест помеченных как "limited"
+let closerLimits = 5; //Количество тайлов от ближайшего "limited" в радиусе
 let aditionalTags = []// Дополнительные теги отбора устанавливаемых тайлов // должны быть присущи всем!
 
+let shiftKeyInverce = true // смена длинны на ширину при установке тайлов
+let lockShiftWhenItsButton = true// Заблокировать вывод окна если активация через МАТТ кнопку
+//включение автоэнкаунтеров
+let autoEncounters = true
 //Оставлет одну ячейку пустой в подходе к особым островам
 let saveTresspass = false
 //заполняет все однотипно чтобы упростить отладку параметров
@@ -24,8 +28,10 @@ const debugSpecificTiles = false // отключает спавн всех об�
 // isTile - пустые места игнорировать или ставить заполнитель
 // defaulTileName - название тайла в таггере для 
 
+const defaulTileName = (autoEncounters)? "waves_auto" : "waves_noauto"
+
 let mapTiles = {
-    "empty"     : {min: 0, max: 63, default:true, isTile: true, defaulTileName: "waves_auto"},//65%
+    "empty"     : {min: 0, max: 63, default:true, isTile: true, defaulTileName: defaulTileName},//65%
     "isle"      : { min: 64, max: 67, },//3%
     "island"    : { min: 68, max: 69, },//1%
     "spoiled"   : { min: 70, max: 72 },//2%
@@ -42,6 +48,8 @@ let mapTiles = {
     "surgat"    : {min: 98, max: 100, maxCount: 1 ,diceAroundHex:"0",limited: true, sateliteHex: "island"},//3%
 
 }        
+
+
 
 const DiceRoll = `1d${Object.values(mapTiles).sort((a, b) => b.max - a.max)[0].max}`
 const tilesName = Object.keys(mapTiles)
@@ -77,6 +85,9 @@ function randIntExcep(exp = []) {
 
 
 function getHexagonsInRadius(centerX, centerY, radius) {
+    let x = centerX;
+    let y = centerY;
+    /*
     let hexagons = [];
   
     for (let x = -radius; x <= radius; x++) {
@@ -86,7 +97,15 @@ function getHexagonsInRadius(centerX, centerY, radius) {
         }
       }
     }
-    return hexagons;
+    return hexagons;*/
+
+    const neighbors = [];
+    for (let dx = -radius; dx <= radius; dx++) {
+        for (let dy = Math.max(-radius, -dx - radius); dy <= Math.min(radius, -dx + radius); dy++) {
+            neighbors.push({ l: x + dx, h: y + dy });
+        }
+    }
+    return neighbors;
   }
 
 function mapToLine (hash) {
@@ -152,8 +171,7 @@ function TileIsPlaced (posX,posY,listOftiles,gridSize) {
     return false
 }
 
-
-void async function main () {
+async function placerTiles () {
     try {
         ui.notifications.info("Заполнение карты в активной сцене начато. Ожидайте дальнейших уведомлений.");
 
@@ -238,9 +256,9 @@ void async function main () {
                 satelitepos[Math.floor(Math.random() * satelitepos.length)].val = 1
                 satelitepos = satelitepos.filter(elem=> elem?.val != 1)
             }
-            
+            let more = []
             if (counttiles > 6) {
-                let more = []
+                
                 more = getHexagonsInRadius(PosL,PosH,2)
                 
                 more.filter(elem=> {
@@ -251,22 +269,26 @@ void async function main () {
                         }
                     })
                     return res
-                })
-
-                satelitepos = satelitepos.concat(more)
+                })   
             }
             
             
             allplacetiles.forEach((el,pos) => {
                 for (let c = 0; c < el.dice; c++) {
-                    if (satelitepos == 0) return;
+                    if (satelitepos.length == 0) {
+                        if (more.length) {
+                            satelitepos = satelitepos.concat(more)
+                        }else{
+                            return
+                        }
+                    };
                     let he = randIntExcep(satelitepos)
                     if (he.l == PosL && PosH == he.h) {
                         satelitepos = removeha(satelitepos,he.l,he.h)
                         he = randIntExcep(satelitepos)
                     }
-                    satelitepos = removeha(satelitepos,he.l,he.h)
                     cells[he.l][he.h] = el.hex
+                    satelitepos = removeha(satelitepos,he.l,he.h)
                 }
             })
             //
@@ -286,13 +308,6 @@ void async function main () {
         let currentScene = game.scenes.current;
         let sceneGrid = currentScene.grid
         let gridSize = sceneGrid.size;
-        // Размеры сцены
-        let sceneWidth = currentScene.width;
-        let sceneHeight = currentScene.height;
-        // Расчет количества гексов
-
-        let hexesAcross = Math.ceil(sceneWidth / gridSize);
-        let hexesDown = Math.ceil(sceneHeight / (gridSize * 0.75)); // 0.75 - корректировка для вертикального расстояния между гексами
 
 
         let mapOffsetPixelsL = gridSize * mapOffsetL; // смещение сетки ширина в гексах
@@ -361,8 +376,55 @@ void async function main () {
         console.log(error);
         return 0
     }
-    
+}
+if (typeof args != "undefined") {
+    autoEncounters = (args[0])? true : false
+    if (lockShiftWhenItsButton) shiftKeyPressed = false;
+}
+
+void async function main () {    
+    const shiftKeyPressed =  (shiftKeyInverce)? event.shiftKey : !event.shiftKey;
 
     
-    
+
+    try {
+        if (shiftKeyPressed) {
+            new Dialog({
+                title: `Заполнение карты`,
+                content: `<form>
+                            Хотите карту с авто событиями?
+                        </form>`,
+                buttons: {
+                    yes: {
+                        icon: "<i class='fas fa-check'></i>",
+                        label: `Автособытия`,
+                        callback: () => {
+                            autoEncounters = true
+                            placerTiles()
+                        }
+                    },
+                    no: {
+                        icon: "<i class='fas fa-times'></i>",
+                        label: `Без авто событий`,
+                        сallback: () => {  
+                            autoEncounters = false
+                            
+                        }
+                    },
+                },
+                close: () => {
+                    placerTiles()
+                }
+            }).render(true);
+            return 1;
+        }
+        placerTiles()
+        return 1
+    } catch (error) {
+        console.log(error)
+        return 0
+    }
 } ()
+
+
+

@@ -16,7 +16,7 @@ void async function main() {
         }
         await currentScene.deleteEmbeddedDocuments("Tile", tilesId);
         // the timeout for next parts, for keep the messages order
-        await sleep(10000);
+        await sleep(2500);
         ui.notifications.info(`Карта очищена. Удалено: ${tilesId.length} ячеек`)
         return 0
     } catch (error) {
