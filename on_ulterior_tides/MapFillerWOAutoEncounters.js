@@ -242,8 +242,7 @@ void async function main () {
             if (counttiles > 6) {
                 let more = []
                 more = getHexagonsInRadius(PosL,PosH,2)
-                more = more.map((el))
-                
+
                 more.filter(elem=> {
                     let res = true;
                     satelitepos.map((hex,ind)=> {
