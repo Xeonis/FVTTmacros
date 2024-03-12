@@ -25,7 +25,7 @@ const debugSpecificTiles = false // отключает спавн всех об�
 // defaulTileName - название тайла в таггере для 
 
 let mapTiles = {
-    "empty"     : {min: 0, max: 63, default:true, isTile: true, defaulTileName: "wowaves_auto"},//65%
+    "empty"     : {min: 0, max: 63, default:true, isTile: true, defaulTileName: "waves_noauto"},//65%
     "isle"      : { min: 64, max: 67, },//3%
     "island"    : { min: 68, max: 69, },//1%
     "spoiled"   : { min: 70, max: 72 },//2%
