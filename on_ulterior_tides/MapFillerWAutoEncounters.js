@@ -27,11 +27,13 @@ const debug = false
 const debugSpecificTiles = false // отключает спавн всех обычных тайлов
 // isTile - пустые места игнорировать или ставить заполнитель
 // defaulTileName - название тайла в таггере для 
-
-const defaulTileName = (autoEncounters)? "waves_auto" : "waves_noauto"
+const selectEncounters = (autoEncounter) => {
+   return (autoEncounter)? "waves_auto" : "waves_noauto"
+}
+    
 
 let mapTiles = {
-    "empty"     : {min: 0, max: 63, default:true, isTile: true, defaulTileName: defaulTileName},//65%
+    "empty"     : {min: 0, max: 63, default:true, isTile: true, defaulTileName: selectEncounters(autoEncounters)},//65%
     "isle"      : { min: 64, max: 67, },//3%
     "island"    : { min: 68, max: 69, },//1%
     "spoiled"   : { min: 70, max: 72 },//2%
@@ -73,7 +75,9 @@ function fillInnHash(sizeL,sizeH) {
 function removeha(hash = [],posl,posh) {
     let newHash = [...hash]
     let a = newHash.findIndex(e => e.l == posl && e.h == posh)
-    newHash[a].val = 0
+    if (newHash[a]) {
+        newHash[a].val = 0
+    }
     return hash.filter(elem => elem?.val != 0)
 }
 
@@ -102,10 +106,20 @@ function getHexagonsInRadius(centerX, centerY, radius) {
     const neighbors = [];
     for (let dx = -radius; dx <= radius; dx++) {
         for (let dy = Math.max(-radius, -dx - radius); dy <= Math.min(radius, -dx + radius); dy++) {
-            neighbors.push({ l: x + dx, h: y + dy });
+            let out = dy
+            if (dx < 0) {
+                out = out - 1 
+            }
+            if (dx == radius && radius != 1){
+                out = out + 1
+            }
+            neighbors.push({ l: x + dx, h: y + out });
         }
     }
-    return neighbors;
+    
+    return neighbors.filter(el => {
+        return (el.l > 0 && el.h > 0 )
+    });
   }
 
 function mapToLine (hash) {
@@ -172,6 +186,7 @@ function TileIsPlaced (posX,posY,listOftiles,gridSize) {
 }
 
 async function placerTiles () {
+    mapTiles.empty.defaulTileName = selectEncounters(autoEncounters)
     try {
         ui.notifications.info("Заполнение карты в активной сцене начато. Ожидайте дальнейших уведомлений.");
 
@@ -251,6 +266,8 @@ async function placerTiles () {
             //получим ид ближайших гексов для сателитов
             let satelitepos = getHexagonsInRadius(PosL,PosH,1)
            
+            
+
             if (saveTresspass) {
                 //уберем один тайл для прохода
                 satelitepos[Math.floor(Math.random() * satelitepos.length)].val = 1
@@ -260,18 +277,24 @@ async function placerTiles () {
             if (counttiles > 6) {
                 
                 more = getHexagonsInRadius(PosL,PosH,2)
-                
-                more.filter(elem=> {
+
+                more = more.filter(elem=> {
                     let res = true;
-                    satelitepos.map((hex,ind)=> {
-                        if (hex.l == elem.posL && hex.h == elem.posH) {
-                            res = false
-                        }
-                    })
+                    try {
+                        satelitepos.forEach((hex,ind)=> {
+                            if (hex.l == elem.l && hex.h == elem.h) {
+                                res = false
+                                throw new RangeError()
+                            }
+                            
+                        })
+                    } catch {}
+                    
                     return res
                 })   
             }
-            
+            //уберем из списка тайл который является основным
+            satelitepos = removeha(satelitepos,PosL,PosH)
             
             allplacetiles.forEach((el,pos) => {
                 for (let c = 0; c < el.dice; c++) {
@@ -377,17 +400,18 @@ async function placerTiles () {
         return 0
     }
 }
-if (typeof args != "undefined") {
-    autoEncounters = (args[0])? true : false
-    if (lockShiftWhenItsButton) shiftKeyPressed = false;
-}
+
 
 void async function main () {    
     const shiftKeyPressed =  (shiftKeyInverce)? event.shiftKey : !event.shiftKey;
 
-    
+    if (typeof args != "undefined") {
+        autoEncounters = (args[0])? true : false
+        //if (lockShiftWhenItsButton) shiftKeyPressed = false;
+    }
 
     try {
+        let work = false
         if (shiftKeyPressed) {
             new Dialog({
                 title: `Заполнение карты`,
@@ -399,6 +423,7 @@ void async function main () {
                         icon: "<i class='fas fa-check'></i>",
                         label: `Автособытия`,
                         callback: () => {
+                            work = true
                             autoEncounters = true
                             placerTiles()
                         }
@@ -406,14 +431,17 @@ void async function main () {
                     no: {
                         icon: "<i class='fas fa-times'></i>",
                         label: `Без авто событий`,
-                        сallback: () => {  
+                        сallback: () => {
+                            work = true
                             autoEncounters = false
-                            
+                            placerTiles()
                         }
                     },
                 },
                 close: () => {
-                    placerTiles()
+                    if (!work) {
+                        ui.notifications.info("Заполнение карты отменено")
+                    }
                 }
             }).render(true);
             return 1;
