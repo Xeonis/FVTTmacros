@@ -407,7 +407,7 @@ void async function main () {
     const shiftKeyPressed =  (shiftKeyInverce)? event.shiftKey : !event.shiftKey;
 
     if (typeof args != "undefined") {
-        autoEncounters = (args[0])? true : false
+        autoEncounters = (args[0])? false : true
         //if (lockShiftWhenItsButton) shiftKeyPressed = false;
     }
 
