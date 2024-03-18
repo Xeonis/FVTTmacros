@@ -24,7 +24,7 @@ let autoEncounters = true
 let saveTresspass = false
 //заполняет все однотипно чтобы упростить отладку параметров
 const debug = false
-const debugSpecificTiles = true // отключает спавн всех обычных тайлов
+const debugSpecificTiles = false // отключает спавн всех обычных тайлов
 // isTile - пустые места игнорировать или ставить заполнитель
 // defaulTileName - название тайла в таггере для 
 const selectEncounters = (autoEncounter) => {
@@ -33,7 +33,7 @@ const selectEncounters = (autoEncounter) => {
     
 
 let mapTiles = {
-    "empty"     : {min: 0, max: 63, default:true, isTile: false, defaulTileName: selectEncounters(autoEncounters)},//65%
+    "empty"     : {min: 0, max: 63, default:true, isTile: true, defaulTileName: selectEncounters(autoEncounters)},//65%
     "isle"      : { min: 64, max: 67, },//3%
     "island"    : { min: 68, max: 69, },//1%
     "spoiled"   : { min: 70, max: 72 },//2%
@@ -43,11 +43,11 @@ let mapTiles = {
     "zongs"     : { min: 82, max: 83 },//1%
     "creeps"    : { min: 84, max: 85 },//1%
 
-    //"salaith"   : {min: 86, max: 88, maxCount: 1 ,diceAroundHex:"1d4",limited: true,borderLimit:10,closerLimit : 4, sateliteHex: "island"},//3%
-    //"holm"      : {min: 89, max: 91, maxCount: 1 ,diceAroundHex:"1d4",limited: true, sateliteHex: "island"},//3%
-    //"ntepoah"   : {min: 92, max: 94, maxCount: 1 ,diceAroundHex:"1d4",limited: true, sateliteHex: "island",anothersatelites:[{dice:"1d2",hex:"reefs"}]},//3%
-    "gnawer"    : {min: 86, max: 100, maxCount: 1 ,diceAroundHex:"19",limited: true, sateliteHex: "maze"},//3%
-    //"surgat"    : {min: 98, max: 100, maxCount: 1 ,diceAroundHex:"0",limited: true, sateliteHex: "island"},//3%
+    "salaith"   : {min: 86, max: 88, maxCount: 1 ,diceAroundHex:"1d4",limited: true,borderLimit:10,closerLimit : 4, sateliteHex: "island"},//3%
+    "holm"      : {min: 89, max: 91, maxCount: 1 ,diceAroundHex:"1d4",limited: true, sateliteHex: "island"},//3%
+    "ntepoah"   : {min: 92, max: 94, maxCount: 1 ,diceAroundHex:"1d4",limited: true, sateliteHex: "island",anothersatelites:[{dice:"1d2",hex:"reefs"}]},//3%
+    "gnawer"    : {min: 95, max: 97, maxCount: 1 ,diceAroundHex:"19",limited: true, sateliteHex: "maze"},//3%
+    "surgat"    : {min: 98, max: 100, maxCount: 1 ,diceAroundHex:"0",limited: true, sateliteHex: "island"},//3%
 
 }        
 
@@ -375,22 +375,15 @@ async function placerTiles () {
                 if (TileIsPlaced(newTile.x,newTile.y,sceneTiles,gridSize)) {
                     continue;
                 }else{
-                    
-                    function sleep(ms) {
-                        return new Promise(resolve => setTimeout(resolve, ms));
-                    }
-
-                    newTile.flags.tagger.tags.push(...["mapTile", "canBeDeleted"])
                     newTiles.push(newTile)
                     currentScene.createEmbeddedDocuments("Tile", [newTile])
-                    await sleep(3000)
                 }
             }
         }
         
       
 
-        //await currentScene.createEmbeddedDocuments("Tile", newTiles)
+        await currentScene.createEmbeddedDocuments("Tile", newTiles)
 
         ui.notifications.info("Заполнение карты завершено")
 
