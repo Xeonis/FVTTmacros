@@ -22,6 +22,7 @@ let lockShiftWhenItsButton = true// Заблокировать вывод окн
 let autoEncounters = true
 //Оставлет одну ячейку пустой в подходе к особым островам
 let saveTresspass = false
+let animation = true
 //заполняет все однотипно чтобы упростить отладку параметров
 const debug = false
 const debugSpecificTiles = false // отключает спавн всех обычных тайлов
@@ -46,7 +47,7 @@ let mapTiles = {
     "salaith"   : {min: 86, max: 88, maxCount: 1 ,diceAroundHex:"1d4",limited: true,borderLimit:10,closerLimit : 4, sateliteHex: "island"},//3%
     "holm"      : {min: 89, max: 91, maxCount: 1 ,diceAroundHex:"1d4",limited: true, sateliteHex: "island"},//3%
     "ntepoah"   : {min: 92, max: 94, maxCount: 1 ,diceAroundHex:"1d4",limited: true, sateliteHex: "island",anothersatelites:[{dice:"1d2",hex:"reefs"}]},//3%
-    "gnawer"    : {min: 95, max: 97, maxCount: 1 ,diceAroundHex:"19",limited: true, sateliteHex: "maze"},//3%
+    "gnawer"    : {min: 95, max: 97, maxCount: 1 ,diceAroundHex:"7",limited: true, sateliteHex: "maze"},//3%
     "surgat"    : {min: 98, max: 100, maxCount: 1 ,diceAroundHex:"0",limited: true, sateliteHex: "island"},//3%
 
 }        
@@ -62,7 +63,6 @@ const hashTableMainTilesIndexes = []; tilesObject.forEach((element,index) => {if
 
 //стандартный тайл на который мы будем менять всех неугодных
 const defaultIndex = tilesObject.findIndex(e => e?.default)
-
 
 
 
@@ -93,19 +93,37 @@ function getHexagonsInRadius(centerX, centerY, radius) {
     //делаем в тупую
     let x = centerX;
     let y = centerY;
-    const neighbors = [];
-    for (let dx = -radius; dx <= radius; dx++) {
-        for (let dy = Math.max(-radius, -dx - radius); dy <= Math.min(radius, -dx + radius); dy++) {
-            let out = dy
-            if (dx < 0) {
-                out = out - 1 
+    let neighbors = [];
+
+        for (let dx = -radius; dx <= radius; dx++) {
+            let cnter = Math.trunc(dx/2)
+            for (let dy = Math.max(-radius, -dx - radius); dy <= Math.min(radius, -dx + radius); dy++) {
+                let out = dy
+                if (dx != 0){
+                    out = out + cnter
+                    
+                }
+                if (reverse) {
+                    if (dx % 2 !== 0) {
+                        if ( y% 2 === 0) {
+                            if (dx < 0) {
+                                out -= 1
+                            }
+                        }else {
+                            if (dx > 0) {
+                                out += 1
+                            }
+                        }
+                    }                    
+                    neighbors.push({ l: x + out, h: y + dx });
+                }else{
+                    neighbors.push({ l: x + dx, h: y + out });
+                }
+                
             }
-            if (dx == radius && radius != 1){
-                out = out + 1
-            }
-            neighbors.push({ l: x + dx, h: y + out });
+            
         }
-    }
+
 
     
     return neighbors.filter(el => {
@@ -157,7 +175,7 @@ function removeBorder (hash =[],borderLimit) {
 
     const hashed = hash.map(el => {
        if((borderedH < el.posH) || (el.posH < borderedStart)) {el.val = 1}
-       if((borderedL < el.posL) || (el.posH < borderedStart)) {el.val = 1}
+       if((borderedL < el.posL) || (el.posL < borderedStart)) {el.val = 1}
        return el
     })
     return hashed.filter(elem=> elem?.val != 1)
@@ -269,7 +287,8 @@ async function placerTiles () {
             }
             let more = []
             if (counttiles > 6) {
-                more = getHexagonsInRadius(PosL,PosH,2)
+                
+                more = getHexagonsInRadius(PosL,PosH,Math.ceil(Math.log2((counttiles/6)+1)))
 
                 more = more.filter(elem=> {
                     let res = true;
@@ -298,12 +317,15 @@ async function placerTiles () {
                         }
                     };
                     let he = randIntExcep(satelitepos)
+                    if (!he) return
                     if (he.l == PosL && PosH == he.h) {
                         satelitepos = removeha(satelitepos,he.l,he.h)
                         he = randIntExcep(satelitepos)
+                        if (!he) return
                     }
-                    cells[he.l][he.h] = el.hex
-                    satelitepos = removeha(satelitepos,he.l,he.h)
+                        cells[he.l][he.h] = el.hex
+                        satelitepos = removeha(satelitepos,he.l,he.h)
+                  
                 }
             })
             //
@@ -372,18 +394,24 @@ async function placerTiles () {
                 let Y = (even_or_odd(posH))?    gridSizeH * mapOffsetH*Math.sqrt(3)/2  + gridSizeH*posH*Math.sqrt(3)/2 : gridSizeH * mapOffsetH*Math.sqrt(3)/2 + (gridSizeH*Math.sqrt(3)/2)*posH;
                 newTile.x = (reverse)? X : Y;
                 newTile.y = (reverse)? Y : X;
+                //newTile.hidden = (animation)? true : false;
                 if (TileIsPlaced(newTile.x,newTile.y,sceneTiles,gridSize)) {
                     continue;
                 }else{
+                    newTile.flags.tagger.tags.push(...["mapTile", "canBeDeleted"])
                     newTiles.push(newTile)
-                    currentScene.createEmbeddedDocuments("Tile", [newTile])
                 }
             }
         }
-        
-      
 
-        await currentScene.createEmbeddedDocuments("Tile", newTiles)
+
+        currentScene.createEmbeddedDocuments("Tile", newTiles).then(callback => {
+            callback.forEach((tile, index) => {
+                const onide = (tile)=>{tile.hidden = true}
+                setTimeout(onide(tile),index*1500)
+            })
+            console.log(callback);
+        })
 
         ui.notifications.info("Заполнение карты завершено")
 
